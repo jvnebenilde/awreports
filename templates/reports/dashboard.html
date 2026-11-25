@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+  <h1>Reports</h1>
+  {% if modules %}
+    <div class="cards">
+      {% for m in modules %}
+        <a class="card" href="{% url 'reports:'|add:m %}">{{ m|title }} Report</a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No report modules are assigned to your account. Contact your manager or administrator.</p>
+  {% endif %}
+{% endblock %}
