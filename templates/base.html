@@ -41,6 +41,7 @@
       <nav>
         <a href="{% url 'reports:dashboard' %}">Reports</a>
         {% if user.role == "manager" %}<a href="{% url 'accounts:team_list' %}">My team</a>{% endif %}
+        {% if user.role == "manager" or user.role == "admin" %}<a href="{% url 'audit:log' %}">Audit log</a>{% endif %}
         {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
         <span>{{ user.username }} ({{ user.get_role_display }}{% if user.department %}, {{ user.get_department_display }}{% endif %})</span>
         <form method="post" action="{% url 'accounts:logout' %}">

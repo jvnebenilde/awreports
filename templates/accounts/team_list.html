@@ -15,6 +15,7 @@
               <td>{{ e.email }}</td>
               <td>{% if e.is_active %}Active{% else %}Inactive{% endif %}</td>
               <td>
+                <a href="{% url 'accounts:team_edit' e.pk %}">Edit</a>
                 <form method="post" action="{% url 'accounts:team_toggle' e.pk %}">
                   {% csrf_token %}
                   <button type="submit" class="link">{% if e.is_active %}Deactivate{% else %}Reactivate{% endif %}</button>

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+  <h1>Audit log{% if user.department %} – {{ user.get_department_display }}{% endif %}</h1>
+  <p>
+    <a href="?view=all">All</a> ·
+    <a href="?view=reports">Report printing</a> ·
+    <a href="?view=accounts">Account changes</a>
+    {% if user.role == "admin" %} · <a href="?view=managers">Manager creation</a>{% endif %}
+  </p>
+
+  {% if creator_counts %}
+    <h2>Manager accounts created, by administrator</h2>
+    <ul>{% for row in creator_counts %}<li>{{ row.actor_username }}: {{ row.n }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if events %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>When</th><th>Who</th><th>Action</th><th>Account</th><th>Details</th>
+          {% if user.role == "admin" %}<th>IP</th>{% endif %}
+        </tr></thead>
+        <tbody>
+          {% for e in events %}
+            <tr>
+              <td>{{ e.timestamp|date:"Y-m-d H:i" }}</td>
+              <td>{{ e.actor_username }} ({{ e.actor_role }})</td>
+              <td>{{ e.get_action_display }}</td>
+              <td>{{ e.target_username|default:"—" }}</td>
+              <td>{{ e.summary }}</td>
+              {% if user.role == "admin" %}<td>{{ e.ip_address|default:"—" }}</td>{% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p>
+      {% if page_obj.has_previous %}<a href="?view={{ current_view }}&page={{ page_obj.previous_page_number }}">&larr; Newer</a>{% endif %}
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      {% if page_obj.has_next %}<a href="?view={{ current_view }}&page={{ page_obj.next_page_number }}">Older &rarr;</a>{% endif %}
+    </p>
+  {% else %}
+    <p>No events recorded.</p>
+  {% endif %}
+{% endblock %}
