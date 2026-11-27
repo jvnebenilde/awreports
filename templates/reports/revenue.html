@@ -1,0 +1,84 @@
+{% extends "reports/base_report.html" %}
+
+{% block report_tables %}
+{% for tbl in report_data.tables %}
+<div class="panel">
+  <h3>{{ tbl.title }}</h3>
+  {% if tbl.rows %}
+    <div class="table-wrap">
+      <table class="report-datatable display stripe hover" style="width:100%">
+        <thead>
+          <tr>{% for col in tbl.rows.0.keys %}<th>{{ col }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for row in tbl.rows %}
+          <tr>{% for val in row.values %}<td>{{ val }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No records found for {{ start_year }}–{{ end_year }}.</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block report_charts %}
+<div class="chart-card">
+  <h4>Revenue & Profit Over Time</h4>
+  <div class="chart-canvas-wrap"><canvas id="revProfitTimeChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Revenue by Territory</h4>
+  <div class="chart-canvas-wrap"><canvas id="revTerritoryChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Profit & Loss by Territory</h4>
+  <div class="chart-canvas-wrap"><canvas id="plTerritoryChart"></canvas></div>
+</div>
+{% endblock %}
+
+{% block report_scripts %}
+<script>
+const rpData = window.CHART_DATA_MAP["revProfitTimeChart"];
+if (rpData) {
+  window.registerChart("revProfitTimeChart", {
+    type: "line",
+    data: {
+      labels: rpData.labels,
+      datasets: [
+        { label: "Revenue ($)", data: rpData.datasets[0].data, borderColor: "#2563eb", tension: 0.25 },
+        { label: "Profit ($)", data: rpData.datasets[1].data, borderColor: "#16a34a", tension: 0.25 }
+      ]
+    }
+  });
+}
+
+const rtData = window.CHART_DATA_MAP["revTerritoryChart"];
+if (rtData) {
+  window.registerChart("revTerritoryChart", {
+    type: "bar",
+    data: {
+      labels: rtData.labels,
+      datasets: [{ label: "Revenue ($)", data: rtData.datasets[0].data, backgroundColor: "#0284c7" }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+}
+
+const plData = window.CHART_DATA_MAP["plTerritoryChart"];
+if (plData) {
+  window.registerChart("plTerritoryChart", {
+    type: "bar",
+    data: {
+      labels: plData.labels,
+      datasets: [
+        { label: "Gross Profit ($)", data: plData.datasets[0].data, backgroundColor: "#16a34a" },
+        { label: "Gross Loss ($)", data: plData.datasets[1].data, backgroundColor: "#dc2626" }
+      ]
+    }
+  });
+}
+</script>
+{% endblock %}

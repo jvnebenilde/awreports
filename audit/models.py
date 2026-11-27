@@ -49,6 +49,8 @@ class AuditEvent(models.Model):
         d = self.detail or {}
         if self.action == self.Action.REPORT_PRINTED:
             text = f"{d.get('report', '?').title()} report"
+            if "start_year" in d and "end_year" in d:
+                text += f" ({d['start_year']}–{d['end_year']})"
             return text + (f", {d['rows']} rows" if "rows" in d else "")
         if d.get("changes"):
             return "; ".join(

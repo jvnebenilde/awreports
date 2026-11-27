@@ -1,20 +1,208 @@
 {% extends "base.html" %}
-{% block title %}{{ module|title }} Report{% endblock %}
+{% block title %}{{ module|title }} Report ({{ start_year }}–{{ end_year }}){% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@9.0.3/dist/style.css">
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@9.0.3" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+<style>
+  .toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem; }
+  .toolbar form { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+  .toolbar select { padding:.4rem .6rem; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); }
+
+  /* Row 1: 4 KPIs in a row */
+  .kpi-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:1rem; margin-bottom:1.25rem; }
+  .kpi-card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:1rem 1.25rem; }
+  .kpi-label { font-size:.8rem; text-transform:uppercase; opacity:.75; letter-spacing:.03em; }
+  .kpi-value { font-size:1.5rem; font-weight:700; margin-top:.35rem; }
+
+  /* Row 2: Summary tables each in their own full-width row */
+  .table-row { display:grid; grid-template-columns:1fr; gap:1.25rem; margin-bottom:1.25rem; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:1rem 1.25rem; }
+  .panel h3 { margin:0 0 .75rem 0; font-size:1.05rem; }
+
+  /* Row 3: Up to 5 charts in a row */
+  .charts-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; }
+  .chart-card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:1rem; height:320px; display:flex; flex-direction:column; }
+  .chart-card h4 { margin:0 0 .5rem 0; font-size:.95rem; }
+  .chart-canvas-wrap { position:relative; flex:1; min-height:0; }
+
+  /* Simple-DataTables dark/light harmony */
+  .datatable-input, .datatable-selector { background:var(--card); color:var(--fg); border:1px solid var(--line); border-radius:4px; padding:.3rem .5rem; }
+
+  @media (max-width: 900px) { .kpi-row { grid-template-columns:repeat(2, 1fr); } }
+  @media print {
+    .datatable-top, .datatable-bottom { display:none !important; }
+    .kpi-row { grid-template-columns:repeat(4, 1fr) !important; page-break-inside:avoid; }
+    .panel { page-break-inside:avoid; border:1px solid #ccc; }
+    .charts-row { grid-template-columns:repeat(2, 1fr) !important; }
+    .chart-card { height:250px !important; page-break-inside:avoid; border:1px solid #ccc; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-  <h1>{{ module|title }} Report</h1>
-  <p><a href="{% url 'reports:dashboard' %}">&larr; All reports</a></p>
-  {% if rows %}
-    <div class="table-wrap">
-      <table>
-        <thead><tr>{% for col in rows.0.keys %}<th>{{ col }}</th>{% endfor %}</tr></thead>
-        <tbody>
-          {% for row in rows %}
-            <tr>{% for value in row.values %}<td>{{ value }}</td>{% endfor %}</tr>
+<div class="toolbar">
+  <div>
+    <h1 style="margin:0;">{{ module|title }} Report</h1>
+    <small style="opacity:.75;">Timeframe: {{ start_year }} to {{ end_year }}</small>
+  </div>
+
+  <div class="no-print" style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
+    <form method="get">
+      <label>From:
+        <select name="start_year">
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == start_year %}selected{% endif %}>{{ y }}</option>
           {% endfor %}
-        </tbody>
-      </table>
+        </select>
+      </label>
+      <label>To:
+        <select name="end_year">
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == end_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit">Apply</button>
+    </form>
+
+    <button type="button" id="printReportBtn">Print Report</button>
+  </div>
+</div>
+
+<!-- ROW 1: Four KPIs -->
+<section class="kpi-row">
+  {% for kpi in report_data.kpis %}
+    <div class="kpi-card">
+      <div class="kpi-label">{{ kpi.label }}</div>
+      <div class="kpi-value">{{ kpi.value }}</div>
     </div>
-  {% else %}
-    <p>No data returned.</p>
-  {% endif %}
+  {% endfor %}
+</section>
+
+<!-- ROW 2: Summary Tables (each occupies its own row) -->
+<section class="table-row">
+  {% for tbl in report_data.tables %}
+    <div class="panel">
+      <h3>{{ tbl.title }}</h3>
+      {% if tbl.rows %}
+        <div class="table-wrap">
+          <table class="dynamic-report-table">
+            <thead>
+              <tr>
+                {% for col in tbl.rows.0.keys %}
+                  <th>{{ col }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in tbl.rows %}
+                <tr>
+                  {% for val in row.values %}
+                    <td>{{ val }}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p>No records found for {{ start_year }}–{{ end_year }}.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+</section>
+
+<!-- ROW 3: Up to 5 Charts in a row -->
+<section class="charts-row">
+  {% for chart in report_data.charts %}
+    <div class="chart-card">
+      <h4>{{ chart.title }}</h4>
+      <div class="chart-canvas-wrap">
+        <canvas id="{{ chart.id }}"></canvas>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+{{ report_data.charts|json_script:"charts-payload" }}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const palette = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
+  const charts = [];
+  const tables = [];
+
+  // 1. Initialize dynamic tables (sortable, searchable, paginated)
+  document.querySelectorAll(".dynamic-report-table").forEach((el) => {
+    tables.push(new simpleDatatables.DataTable(el, { perPage: 10, perPageSelect: [5, 10, 25, 50] }));
+  });
+
+  // 2. Render Chart.js visualizations
+  const chartSpecs = JSON.parse(document.getElementById("charts-payload").textContent);
+  chartSpecs.forEach((spec) => {
+    const canvas = document.getElementById(spec.id);
+    if (!canvas) return;
+
+    const datasets = spec.datasets.map((ds, i) => ({
+      ...ds,
+      backgroundColor: (spec.type === "pie" || spec.type === "doughnut") ? palette : palette[i % palette.length],
+      borderColor: spec.type === "line" ? palette[i % palette.length] : undefined,
+      tension: spec.type === "line" ? 0.25 : undefined,
+    }));
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: spec.horizontal ? "y" : "x",
+      scales: (spec.type === "pie" || spec.type === "doughnut") ? {} : {
+        x: { stacked: Boolean(spec.stacked) },
+        y: { stacked: Boolean(spec.stacked) },
+      },
+    };
+
+    charts.push(new Chart(canvas, {
+      type: spec.type,
+      data: { labels: spec.labels, datasets },
+      options,
+    }));
+  });
+
+  // 3. Audit-logged print handler
+  function getCsrfToken() {
+    const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+
+  document.getElementById("printReportBtn").addEventListener("click", async () => {
+    const res = await fetch("{% url 'reports:record_print' module %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken(),
+      },
+      body: JSON.stringify({
+        start_year: {{ start_year }},
+        end_year: {{ end_year }},
+        rows: {{ total_rows }},
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Could not log print event to audit log. Print cancelled.");
+      return;
+    }
+
+    // Expand paginated rows & resize charts before printing
+    tables.forEach((dt) => dt.update({ perPage: 1000 }));
+    charts.forEach((ch) => ch.resize());
+
+    setTimeout(() => {
+      window.print();
+      tables.forEach((dt) => dt.update({ perPage: 10 }));
+    }, 200);
+  });
+});
+</script>
 {% endblock %}

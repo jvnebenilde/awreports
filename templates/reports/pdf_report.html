@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ module|title }} Report ({{ start_year }}–{{ end_year }})</title>
+  <style>
+    @page {
+      size: letter portrait;
+      margin: 0.65in 0.6in 0.7in 0.6in;
+
+      @top-left {
+        content: "{{ module|title }} Report ({{ start_year }}–{{ end_year }})";
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 8.5pt;
+        color: #64748b;
+      }
+      @top-right {
+        content: "AdventureWorks2019";
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 8.5pt;
+        color: #64748b;
+      }
+      @bottom-left {
+        content: "Printed by: {{ printed_by|escapejs }}";
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 8.5pt;
+        color: #475569;
+      }
+      @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 8.5pt;
+        color: #475569;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      font-size: 9.5pt;
+      margin: 0;
+    }
+
+    .report-header {
+      border-bottom: 2px solid #1e293b;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .report-header h1 { margin: 0; font-size: 18pt; color: #0f172a; }
+    .report-meta { text-align: right; font-size: 8.5pt; color: #475569; line-height: 1.4; }
+
+    /* Row 1: 4 KPIs */
+    .kpi-grid {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      break-inside: avoid;
+    }
+    .kpi-box {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+    .kpi-label {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .kpi-val {
+      font-size: 13pt;
+      font-weight: 700;
+      margin-top: 4px;
+      color: #0f172a;
+    }
+
+    /* Row 2: Summary Tables */
+    .section-block { margin-bottom: 18px; }
+    .section-title {
+      font-size: 11pt;
+      font-weight: 700;
+      margin: 0 0 6px 0;
+      color: #1e293b;
+      break-after: avoid;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+    }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    th {
+      background: #1e293b;
+      color: #ffffff;
+      text-align: left;
+      padding: 6px 8px;
+      font-weight: 600;
+    }
+    td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+
+    /* Row 3: Full-Width Charts (never split mid-chart) */
+    .chart-block {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .chart-block h4 {
+      margin: 0 0 8px 0;
+      font-size: 10pt;
+      color: #1e293b;
+    }
+    .chart-block img {
+      width: 100%;
+      max-height: 235px;
+      object-fit: contain;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="report-header">
+    <div>
+      <h1>{{ module|title }} Report</h1>
+      <div style="color:#475569; font-size:9.5pt;">Reporting Period: {{ start_year }} – {{ end_year }}</div>
+    </div>
+    <div class="report-meta">
+      <div><strong>Printed by:</strong> {{ printed_by }}</div>
+      <div><strong>Database:</strong> AdventureWorks2019</div>
+    </div>
+  </div>
+
+  <!-- 4 KPIs -->
+  <div class="kpi-grid">
+    {% for kpi in report_data.kpis %}
+      <div class="kpi-box">
+        <div class="kpi-label">{{ kpi.label }}</div>
+        <div class="kpi-val">{{ kpi.value }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Summary Tables -->
+  {% for tbl in report_data.tables %}
+    <div class="section-block">
+      <h3 class="section-title">{{ tbl.title }}</h3>
+      {% if tbl.rows %}
+        <table>
+          <thead>
+            <tr>
+              {% for col in tbl.rows.0.keys %}
+                <th>{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in tbl.rows %}
+              <tr>
+                {% for val in row.values %}
+                  <td>{{ val }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>No records found for {{ start_year }}–{{ end_year }}.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <!-- Full-Width Charts -->
+  {% for ch in chart_images %}
+    <div class="chart-block">
+      <h4>{{ ch.title }}</h4>
+      <img src="{{ ch.data_url }}" alt="{{ ch.title }}">
+    </div>
+  {% endfor %}
+
+</body>
+</html>

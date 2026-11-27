@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Business Reports{% endblock %}</title>
+  <title>{% block title %}AdventureWorks Reports{% endblock %}</title>
   <style>
     :root { --bg:#f6f7f9; --fg:#1d2430; --card:#fff; --line:#dde1e7; --accent:#1f5eff; }
     @media (prefers-color-scheme: dark) {
@@ -17,7 +17,7 @@
     header nav { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
     header form { margin:0; }
     a { color:var(--accent); }
-    main { max-width:960px; margin:0 auto; padding:1.5rem; }
+    main { max-width:1400px; margin:0 auto; padding:1.5rem; }
     .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; }
     .card { display:block; padding:1.25rem; background:var(--card); border:1px solid var(--line);
             border-radius:8px; text-decoration:none; color:var(--fg); font-weight:600; }
@@ -30,13 +30,18 @@
     button.link { background:none; border:none; color:var(--accent); padding:0; }
     form p { margin:.75rem 0; }
     input { padding:.4rem; width:100%; max-width:320px; }
+    @media print {
+      header, .no-print { display: none !important; }
+      main { max-width: 100%; padding: 0; }
+      body { background: #fff; color: #000; }
+    }
     .helptext, .errorlist { font-size:.85rem; }
     .errorlist { color:#d33; padding-left:1rem; }
   </style>
 </head>
 <body>
   <header>
-    <a class="brand" href="{% url 'reports:dashboard' %}">Business Reports</a>
+    <a class="brand" href="{% url 'reports:dashboard' %}">AdventureWorks Reports</a>
     {% if user.is_authenticated %}
       <nav>
         <a href="{% url 'reports:dashboard' %}">Reports</a>

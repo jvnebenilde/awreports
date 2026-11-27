@@ -1,0 +1,79 @@
+{% extends "reports/base_report.html" %}
+
+{% block report_tables %}
+{% for tbl in report_data.tables %}
+<div class="panel">
+  <h3>{{ tbl.title }}</h3>
+  {% if tbl.rows %}
+    <div class="table-wrap">
+      <table class="report-datatable display stripe hover" style="width:100%">
+        <thead>
+          <tr>{% for col in tbl.rows.0.keys %}<th>{{ col }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for row in tbl.rows %}
+          <tr>{% for val in row.values %}<td>{{ val }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No records found for {{ start_year }}–{{ end_year }}.</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block report_charts %}
+<div class="chart-card">
+  <h4>Cost Over Time (Month)</h4>
+  <div class="chart-canvas-wrap"><canvas id="costOverTimeChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Top Vendors by Spend</h4>
+  <div class="chart-canvas-wrap"><canvas id="topVendorsChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Top Products by Cost</h4>
+  <div class="chart-canvas-wrap"><canvas id="topProductsCostChart"></canvas></div>
+</div>
+{% endblock %}
+
+{% block report_scripts %}
+<script>
+const ctData = window.CHART_DATA_MAP["costOverTimeChart"];
+if (ctData) {
+  window.registerChart("costOverTimeChart", {
+    type: "line",
+    data: {
+      labels: ctData.labels,
+      datasets: [{ label: "Monthly COGS ($)", data: ctData.datasets[0].data, borderColor: "#dc2626", backgroundColor: "rgba(220,38,38,0.12)", fill: true, tension: 0.25 }]
+    }
+  });
+}
+
+const tvData = window.CHART_DATA_MAP["topVendorsChart"];
+if (tvData) {
+  window.registerChart("topVendorsChart", {
+    type: "bar",
+    data: {
+      labels: tvData.labels,
+      datasets: [{ label: "Spend ($)", data: tvData.datasets[0].data, backgroundColor: "#7c3aed" }]
+    },
+    options: { indexAxis: "y", plugins: { legend: { display: false } } }
+  });
+}
+
+const tpData = window.CHART_DATA_MAP["topProductsCostChart"];
+if (tpData) {
+  window.registerChart("topProductsCostChart", {
+    type: "bar",
+    data: {
+      labels: tpData.labels,
+      datasets: [{ label: "Total Cost ($)", data: tpData.datasets[0].data, backgroundColor: "#ea580c" }]
+    },
+    options: { indexAxis: "y", plugins: { legend: { display: false } } }
+  });
+}
+</script>
+{% endblock %}

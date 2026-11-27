@@ -1,0 +1,74 @@
+{% extends "reports/base_report.html" %}
+
+{% block report_tables %}
+{% for tbl in report_data.tables %}
+<div class="panel">
+  <h3>{{ tbl.title }}</h3>
+  {% if tbl.rows %}
+    <div class="table-wrap">
+      <table class="report-datatable display stripe hover" style="width:100%">
+        <thead>
+          <tr>{% for col in tbl.rows.0.keys %}<th>{{ col }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for row in tbl.rows %}
+          <tr>{% for val in row.values %}<td>{{ val }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No records found for {{ start_year }}–{{ end_year }}.</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block report_charts %}
+<div class="chart-card">
+  <h4>New vs. Returning Customers per Year</h4>
+  <div class="chart-canvas-wrap"><canvas id="custNewReturningChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Revenue by Customer Type</h4>
+  <div class="chart-canvas-wrap"><canvas id="custTypePieChart"></canvas></div>
+</div>
+{% endblock %}
+
+{% block report_scripts %}
+<script>
+const nrData = window.CHART_DATA_MAP["custNewReturningChart"];
+if (nrData) {
+  window.registerChart("custNewReturningChart", {
+    type: "bar",
+    data: {
+      labels: nrData.labels,
+      datasets: [
+        { label: "New Customers", data: nrData.datasets[0].data, backgroundColor: "#2563eb" },
+        { label: "Returning Customers", data: nrData.datasets[1].data, backgroundColor: "#10b981" }
+      ]
+    },
+    options: { scales: { x: { stacked: true }, y: { stacked: true } } }
+  });
+}
+
+const typeData = window.CHART_DATA_MAP["custTypePieChart"];
+if (typeData) {
+  window.registerChart("custTypePieChart", {
+    type: "doughnut",
+    data: {
+      labels: typeData.labels,
+      datasets: [{ data: typeData.datasets[0].data, backgroundColor: ["#6366f1", "#f59e0b"] }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: "right",
+          labels: { boxWidth: 12, font: { size: 12 } }
+        }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

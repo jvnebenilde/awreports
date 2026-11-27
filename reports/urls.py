@@ -8,4 +8,5 @@ urlpatterns = [
     path("customer/", views.CustomerReportView.as_view(), name="customer"),
     path("revenue/", views.RevenueReportView.as_view(), name="revenue"),
     path("cost/", views.CostReportView.as_view(), name="cost"),
+    path("<str:module>/pdf/", views.ExportPdfView.as_view(), name="export_pdf"),
 ]

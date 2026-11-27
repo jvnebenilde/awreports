@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}{{ module|title }} Report ({{ start_year }}–{{ end_year }}){% endblock %}
+
+{% block content %}
+<!-- DataTables & Chart.js Assets (inside block content so base.html needs no changes) -->
+<link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<style>
+  .toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem; }
+  .toolbar form { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+  .toolbar select { padding:.4rem .6rem; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); }
+
+  /* Row 1: 4 KPIs in a single row */
+  .kpi-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:1rem; margin-bottom:1.25rem; }
+  .kpi-card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:1rem 1.25rem; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .kpi-label { font-size:.78rem; text-transform:uppercase; opacity:.75; letter-spacing:.03em; font-weight:600; }
+  .kpi-value { font-size:1.45rem; font-weight:700; margin-top:.35rem; word-break:break-word; }
+
+  /* Row 2: Summary tables each occupying their own full-width row */
+  .table-row { display:grid; grid-template-columns:1fr; gap:1.25rem; margin-bottom:1.25rem; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:1.25rem; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .panel h3 { margin:0 0 1rem 0; font-size:1.05rem; border-bottom:1px solid var(--line); padding-bottom:.5rem; }
+
+  /* Polish DataTables appearance in both light and dark modes */
+  .dt-container { font-size:.9rem; color:var(--fg); }
+  .dt-container .dt-search input,
+  .dt-container .dt-length select {
+    background:var(--bg); color:var(--fg); border:1px solid var(--line);
+    border-radius:6px; padding:.3rem .55rem; margin-left:.35rem;
+  }
+  table.dataTable thead th {
+    background:var(--bg); color:var(--fg); font-weight:600;
+    border-bottom:2px solid var(--line) !important; padding:.65rem .75rem;
+  }
+  table.dataTable tbody td { padding:.55rem .75rem; border-bottom:1px solid var(--line); }
+  table.dataTable.stripe tbody tr:nth-child(odd) > * { box-shadow:inset 0 0 0 9999px rgba(127,127,127,.04); }
+  table.dataTable.hover tbody tr:hover > * { box-shadow:inset 0 0 0 9999px rgba(31,94,255,.08); }
+
+  /* Row 3: Full-width stacked charts */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.25rem;
+    height: 380px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .chart-card h4 {
+    margin: 0 0 .75rem 0;
+    font-size: 1.05rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: .5rem;
+  }
+  .chart-canvas-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media print {
+    header, .no-print, .dt-search, .dt-length, .dt-info, .dt-paging { display: none !important; }
+    main { max-width: 100% !important; padding: 0 !important; }
+    .kpi-row { grid-template-columns: repeat(4, 1fr) !important; page-break-inside: avoid; }
+    .panel { page-break-inside: avoid; border: 1px solid #ccc; margin-bottom: 1rem; }
+    .charts-row { grid-template-columns: 1fr !important; gap: 1rem; }
+    .chart-card { height: 300px !important; page-break-inside: avoid; border: 1px solid #ccc; }
+  } 
+</style>
+
+<div style="display:none;">{% csrf_token %}</div>
+
+<div class="toolbar">
+  <div>
+    <h1 style="margin:0;">{{ module|title }} Report</h1>
+    <small style="opacity:.75;">AdventureWorks2019 | {{ start_year }} – {{ end_year }}</small>
+  </div>
+
+  <div class="no-print" style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
+    <form method="get">
+      <label>From:
+        <select name="start_year">
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == start_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>To:
+        <select name="end_year">
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == end_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit">Apply</button>
+    </form>
+
+    <button type="button" id="printReportBtn">Print Report</button>
+  </div>
+</div>
+
+<!-- ROW 1: Four KPIs -->
+<section class="kpi-row">
+  {% for kpi in report_data.kpis %}
+    <div class="kpi-card">
+      <div class="kpi-label">{{ kpi.label }}</div>
+      <div class="kpi-value">{{ kpi.value }}</div>
+    </div>
+  {% endfor %}
+</section>
+
+<!-- ROW 2: Summary Tables (Each in its own row) -->
+<section class="table-row">
+  {% block report_tables %}{% endblock %}
+</section>
+
+<!-- ROW 3: Up to 5 Charts in a row -->
+<section class="charts-row">
+  {% block report_charts %}{% endblock %}
+</section>
+
+{{ report_data.charts|json_script:"charts-data" }}
+
+<script>
+window.REPORT_CHARTS = [];
+window.CHART_DATA_MAP = {};
+window.REPORT_DATATABLES = [];
+
+// 1. Parse chart data safely
+const rawChartsEl = document.getElementById("charts-data");
+if (rawChartsEl) {
+  JSON.parse(rawChartsEl.textContent).forEach(item => {
+    window.CHART_DATA_MAP[item.id] = item;
+  });
+}
+
+// 2. Initialize regular DataTables on all report tables
+$(document).ready(function () {
+  $("table.report-datatable").each(function () {
+    const dt = $(this).DataTable({
+      pageLength: 10,
+      lengthMenu: [5, 10, 25, 50, 100],
+      order: [],
+      responsive: true
+    });
+    window.REPORT_DATATABLES.push(dt);
+  });
+});
+
+// 3. Helper for module templates to create Chart.js charts
+window.registerChart = function(canvasId, config) {
+  const el = document.getElementById(canvasId);
+  if (!el || typeof Chart === "undefined") {
+    console.warn("Chart canvas or Chart.js missing:", canvasId);
+    return null;
+  }
+  const instance = new Chart(el, {
+    ...config,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      ...(config.options || {})
+    }
+  });
+  window.REPORT_CHARTS.push(instance);
+  return instance;
+};
+
+// 4. WeasyPrint PDF Export & Audit-Logged Print Handler
+document.getElementById("printReportBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("printReportBtn");
+  const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]")?.value || "";
+  btn.disabled = true;
+  btn.textContent = "Generating PDF...";
+
+  try {
+    // Capture every rendered Chart.js canvas with its card title
+    const chartsPayload = window.REPORT_CHARTS.map(chart => {
+      const card = chart.canvas.closest(".chart-card");
+      const title = card ? card.querySelector("h4")?.textContent.trim() : "";
+      return {
+        title: title,
+        data_url: chart.toBase64Image("image/png", 1.0)
+      };
+    });
+
+    const res = await fetch("{% url 'reports:export_pdf' module %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken,
+      },
+      body: JSON.stringify({
+        start_year: {{ start_year }},
+        end_year: {{ end_year }},
+        charts: chartsPayload,
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Failed to generate PDF or record print audit log.");
+      return;
+    }
+
+    const blob = await res.blob();
+    const pdfUrl = URL.createObjectURL(blob);
+    window.open(pdfUrl, "_blank");
+  } catch (err) {
+    console.error("PDF export error:", err);
+    alert("Error generating PDF report.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Print Report";
+  }
+});
+</script>
+
+{% block report_scripts %}{% endblock %}
+{% endblock %}

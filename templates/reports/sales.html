@@ -1,0 +1,111 @@
+{% extends "reports/base_report.html" %}
+
+{% block report_tables %}
+{% for tbl in report_data.tables %}
+<div class="panel">
+  <h3>{{ tbl.title }}</h3>
+  {% if tbl.rows %}
+    <div class="table-wrap">
+      <table class="report-datatable display stripe hover" style="width:100%">
+        <thead>
+          <tr>{% for col in tbl.rows.0.keys %}<th>{{ col }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for row in tbl.rows %}
+          <tr>{% for val in row.values %}<td>{{ val }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No records found for {{ start_year }}–{{ end_year }}.</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block report_charts %}
+<div class="chart-card">
+  <h4>Sales Over Time (Monthly)</h4>
+  <div class="chart-canvas-wrap"><canvas id="salesMonthlyChart"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Sales by Territory</h4>
+  <div class="chart-canvas-wrap"><canvas id="salesTerritoryBar"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Sales by Territory & Region</h4>
+  <div class="chart-canvas-wrap"><canvas id="salesTerritoryRegionPie"></canvas></div>
+</div>
+<div class="chart-card">
+  <h4>Sales by Category & Subcategory</h4>
+  <div class="chart-canvas-wrap"><canvas id="salesCategoryPie"></canvas></div>
+</div>
+{% endblock %}
+
+{% block report_scripts %}
+<script>
+const palette = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#14b8a6"];
+
+const mData = window.CHART_DATA_MAP["salesMonthlyChart"];
+if (mData) {
+  window.registerChart("salesMonthlyChart", {
+    type: "line",
+    data: {
+      labels: mData.labels,
+      datasets: [{ label: "Sales ($)", data: mData.datasets[0].data, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.12)", fill: true, tension: 0.25 }]
+    }
+  });
+}
+
+const tBar = window.CHART_DATA_MAP["salesTerritoryBar"];
+if (tBar) {
+  window.registerChart("salesTerritoryBar", {
+    type: "bar",
+    data: {
+      labels: tBar.labels,
+      datasets: [{ label: "Sales ($)", data: tBar.datasets[0].data, backgroundColor: "#0ea5e9" }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+}
+
+const tPie = window.CHART_DATA_MAP["salesTerritoryRegionPie"];
+if (tPie) {
+  window.registerChart("salesTerritoryRegionPie", {
+    type: "pie",
+    data: {
+      labels: tPie.labels,
+      datasets: [{ data: tPie.datasets[0].data, backgroundColor: palette }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: "right",
+          labels: { boxWidth: 12, font: { size: 12 } }
+        }
+      }
+    }
+  });
+}
+
+const cPie = window.CHART_DATA_MAP["salesCategoryPie"];
+if (cPie) {
+  window.registerChart("salesCategoryPie", {
+    type: "pie",
+    data: {
+      labels: cPie.labels.slice(0, 10),
+      datasets: [{ data: cPie.datasets[0].data.slice(0, 10), backgroundColor: palette }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: "right",
+          labels: { boxWidth: 12, font: { size: 12 } }
+        }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}
