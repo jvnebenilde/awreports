@@ -1,4 +1,4 @@
-from .db import run_query
+from .db import run_query, format_kpi
 
 def get_report_data(start_year: int, end_year: int) -> dict:
     params = [start_year, end_year]
@@ -94,11 +94,11 @@ def get_report_data(start_year: int, end_year: int) -> dict:
 
     return {
         "kpis": [
-            {"label": "Total Sales", "value": f"${kpi_base['total_sales']:,.2f}"},
-            {"label": "Orders", "value": f"{kpi_base['total_orders']:,}"},
+            {"label": "Total Sales", "value": format_kpi(kpi_base["total_sales"], prefix="$")},
+            {"label": "Orders", "value": format_kpi(kpi_base["total_orders"])},
             {"label": "Top Territory", "value": top_terr[0]["name"] if top_terr else "N/A"},
             {"label": "Best-Selling Product", "value": best_prod[0]["name"] if best_prod else "N/A"},
-        ],
+        ], 
         "tables": [
             {"title": "Total Sales by Year", "rows": sales_by_year},
             {"title": "Top Products & Categories", "rows": top_products},

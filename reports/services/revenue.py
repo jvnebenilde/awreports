@@ -1,4 +1,4 @@
-from .db import run_query
+from .db import run_query, format_kpi
 
 def get_report_data(start_year: int, end_year: int) -> dict:
     params = [start_year, end_year]
@@ -74,11 +74,11 @@ def get_report_data(start_year: int, end_year: int) -> dict:
 
     return {
         "kpis": [
-            {"label": "Total Revenue", "value": f"${tot_rev:,.2f}"},
-            {"label": "Gross Profit", "value": f"${tot_profit:,.2f}"},
-            {"label": "Margin %", "value": f"{margin_pct:.1f}%"},
-            {"label": "Loss-Making Sales", "value": f"{loss_sales:,} lines"},
-        ],
+            {"label": "Total Revenue", "value": format_kpi(tot_rev, prefix="$")},
+            {"label": "Gross Profit", "value": format_kpi(tot_profit, prefix="$")},
+            {"label": "Margin %", "value": format_kpi(margin_pct, suffix="%")},
+            {"label": "Loss-Making Sales", "value": format_kpi(loss_sales, suffix=" lines")},
+        ], 
         "tables": [
             {"title": "Revenue, Cost, and Profit per Year", "rows": yearly},
             {"title": "Worst-Margin Products", "rows": worst_margin},

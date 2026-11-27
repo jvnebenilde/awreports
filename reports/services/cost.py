@@ -1,4 +1,4 @@
-from .db import run_query
+from .db import run_query, format_kpi
 
 def get_report_data(start_year: int, end_year: int) -> dict:
     params = [start_year, end_year]
@@ -93,11 +93,11 @@ def get_report_data(start_year: int, end_year: int) -> dict:
 
     return {
         "kpis": [
-            {"label": "Cost of Goods Sold", "value": f"${cogs:,.2f}"},
-            {"label": "Purchasing Spend", "value": f"${purch_spend:,.2f}"},
-            {"label": "Manufacturing Cost", "value": f"${mfg_cost:,.2f}"},
+            {"label": "Cost of Goods Sold", "value": format_kpi(cogs, prefix="$")},
+            {"label": "Purchasing Spend", "value": format_kpi(purch_spend, prefix="$")},
+            {"label": "Manufacturing Cost", "value": format_kpi(mfg_cost, prefix="$")},
             {"label": "Largest Single Cost Item", "value": largest_item},
-        ],
+        ], 
         "tables": [
             {"title": "Cost per Year", "rows": cost_per_year},
             {"title": "Top Vendors", "rows": top_vendors},

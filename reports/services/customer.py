@@ -1,4 +1,4 @@
-from .db import run_query
+from .db import run_query, format_kpi
 
 def get_report_data(start_year: int, end_year: int) -> dict:
     params = [start_year, end_year]
@@ -68,11 +68,11 @@ def get_report_data(start_year: int, end_year: int) -> dict:
 
     return {
         "kpis": [
-            {"label": "Active Customers", "value": f"{kpi_row['active_customers']:,}"},
-            {"label": "Average Order Value", "value": f"${kpi_row['aov']:,.2f}"},
-            {"label": "Repeat Customer Rate", "value": f"{kpi_row['repeat_rate']:.1f}%"},
-            {"label": "Top-10 Revenue Share", "value": f"{top_10_share:.1f}%"},
-        ],
+            {"label": "Active Customers", "value": format_kpi(kpi_row["active_customers"])},
+            {"label": "Average Order Value", "value": format_kpi(kpi_row["aov"], prefix="$")},
+            {"label": "Repeat Customer Rate", "value": format_kpi(kpi_row["repeat_rate"], suffix="%")},
+            {"label": "Top-10 Revenue Share", "value": format_kpi(top_10_share, suffix="%")},
+        ], 
         "tables": [
             {"title": "Top 10 Spenders", "rows": top_10},
             {"title": "Bottom 10 Spenders", "rows": bottom_10},

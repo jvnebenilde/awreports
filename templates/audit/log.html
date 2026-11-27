@@ -1,46 +1,71 @@
 {% extends "base.html" %}
-{% block title %}Audit log{% endblock %}
+{% block title %}Audit Log{% endblock %}
+
 {% block content %}
-  <h1>Audit log{% if user.department %} – {{ user.get_department_display }}{% endif %}</h1>
-  <p>
-    <a href="?view=all">All</a> ·
-    <a href="?view=reports">Report printing</a> ·
-    <a href="?view=accounts">Account changes</a>
-    {% if user.role == "admin" %} · <a href="?view=managers">Manager creation</a>{% endif %}
-  </p>
+<link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
 
-  {% if creator_counts %}
-    <h2>Manager accounts created, by administrator</h2>
-    <ul>{% for row in creator_counts %}<li>{{ row.actor_username }}: {{ row.n }}</li>{% endfor %}</ul>
-  {% endif %}
+<style>
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:1.25rem; }
+  .dt-container { font-size:.9rem; color:var(--fg); }
+  .dt-container .dt-search input,
+  .dt-container .dt-length select {
+    background:var(--bg); color:var(--fg); border:1px solid var(--line);
+    border-radius:6px; padding:.3rem .55rem; margin-left:.35rem;
+  }
+  table.dataTable thead th {
+    background:var(--bg); color:var(--fg); font-weight:600;
+    border-bottom:2px solid var(--line) !important; padding:.65rem .75rem;
+  }
+  table.dataTable tbody td { padding:.55rem .75rem; border-bottom:1px solid var(--line); }
+  table.dataTable.stripe tbody tr:nth-child(odd) > * { box-shadow:inset 0 0 0 9999px rgba(127,127,127,.04); }
+  table.dataTable.hover tbody tr:hover > * { box-shadow:inset 0 0 0 9999px rgba(31,94,255,.08); }
+</style>
 
-  {% if events %}
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>When</th><th>Who</th><th>Action</th><th>Account</th><th>Details</th>
-          {% if user.role == "admin" %}<th>IP</th>{% endif %}
-        </tr></thead>
-        <tbody>
-          {% for e in events %}
-            <tr>
-              <td>{{ e.timestamp|date:"Y-m-d H:i" }}</td>
-              <td>{{ e.actor_username }} ({{ e.actor_role }})</td>
-              <td>{{ e.get_action_display }}</td>
-              <td>{{ e.target_username|default:"—" }}</td>
-              <td>{{ e.summary }}</td>
-              {% if user.role == "admin" %}<td>{{ e.ip_address|default:"—" }}</td>{% endif %}
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <p>
-      {% if page_obj.has_previous %}<a href="?view={{ current_view }}&page={{ page_obj.previous_page_number }}">&larr; Newer</a>{% endif %}
-      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-      {% if page_obj.has_next %}<a href="?view={{ current_view }}&page={{ page_obj.next_page_number }}">Older &rarr;</a>{% endif %}
-    </p>
-  {% else %}
-    <p>No events recorded.</p>
-  {% endif %}
+<h1>Audit Log</h1>
+
+<div class="panel">
+  <div class="table-wrap">
+    <!-- Keep your existing <thead> and <tbody> loop, just add the classes below to <table> -->
+    <table id="auditLogTable" class="audit-datatable display stripe hover" style="width:100%">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Action</th>
+          <th>Department</th>
+          <th>Actor</th>
+          <th>Target</th>
+          <th>Detail</th>
+          <th>IP Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+          <tr>
+            <!-- Keep your existing row cells; data-order ensures chronological sorting -->
+            <td data-order="{{ event.timestamp|date:'U' }}">{{ event.timestamp }}</td>
+            <td>{{ event.get_action_display }}</td>
+            <td>{{ event.department|default:"—" }}</td>
+            <td>{{ event.actor_username }} ({{ event.actor_role }})</td>
+            <td>{{ event.target_username|default:"—" }}</td>
+            <td>{{ event.summary }}</td>
+            <td>{{ event.ip_address|default:"—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+$(document).ready(function () {
+  $("#auditLogTable").DataTable({
+    pageLength: 25,
+    lengthMenu: [10, 25, 50, 100],
+    order: [[0, "desc"]],
+    responsive: true
+  });
+});
+</script>
 {% endblock %}

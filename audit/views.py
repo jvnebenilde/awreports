@@ -19,6 +19,11 @@ class AuditLogView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         qs = AuditEvent.objects.all()
+
+        if user.role == "admin" or user.is_superuser:
+            events = qs
+        else:
+            events = qs.filter(department=user.department)
         if user.role == Role.MANAGER:
             qs = qs.filter(department=user.department)      # the scoping rule
 
