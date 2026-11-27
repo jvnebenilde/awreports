@@ -10,6 +10,11 @@ class AuditEvent(models.Model):
         USER_DEACTIVATED = "user_deactivated", "Account deactivated"
         USER_REACTIVATED = "user_reactivated", "Account reactivated"
         USER_DELETED = "user_deleted", "Account deleted"
+        LOGIN = "login", "Login"
+        LOGOUT = "logout", "Logout"
+        LOGIN_FAILED = "login_failed", "Failed login"
+        ACCESS_DENIED = "access_denied", "Access denied"
+        REPORT_VIEWED = "report_viewed", "Report viewed"
 
     USER_ACTIONS = [
         Action.USER_CREATED, Action.USER_UPDATED, Action.USER_DEACTIVATED,
@@ -52,6 +57,12 @@ class AuditEvent(models.Model):
             if "start_year" in d and "end_year" in d:
                 text += f" ({d['start_year']}–{d['end_year']})"
             return text + (f", {d['rows']} rows" if "rows" in d else "")
+        if self.action == self.Action.REPORT_VIEWED:
+            return f"{d.get('report', '?').title()} report opened"
+        if self.action == self.Action.ACCESS_DENIED:
+            return f"Blocked: {d.get('method', '')} {d.get('path', '')}"
+        if self.action == self.Action.LOGIN_FAILED:
+            return "Wrong username or password"
         if d.get("changes"):
             return "; ".join(
                 f"{k}: {v['from'] or '—'} → {v['to'] or '—'}" for k, v in d["changes"].items()

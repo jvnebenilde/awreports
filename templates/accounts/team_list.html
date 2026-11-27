@@ -2,7 +2,9 @@
 {% block title %}My team{% endblock %}
 {% block content %}
   <h1>{{ user.get_department_display }} team</h1>
-  <p><a class="btn" href="{% url 'accounts:team_create' %}">Add employee</a></p>
+  {% if user.role == "manager" %}
+    <p><a class="btn" href="{% url 'accounts:team_create' %}">Add employee</a></p>
+  {% endif %}
   {% if employees %}
     <div class="table-wrap">
       <table>
@@ -15,11 +17,13 @@
               <td>{{ e.email }}</td>
               <td>{% if e.is_active %}Active{% else %}Inactive{% endif %}</td>
               <td>
-                <a href="{% url 'accounts:team_edit' e.pk %}">Edit</a>
-                <form method="post" action="{% url 'accounts:team_toggle' e.pk %}">
-                  {% csrf_token %}
-                  <button type="submit" class="link">{% if e.is_active %}Deactivate{% else %}Reactivate{% endif %}</button>
-                </form>
+                {% if user.role == "manager" %}
+                  <a href="{% url 'accounts:team_edit' e.pk %}">Edit</a>
+                  <form method="post" action="{% url 'accounts:team_toggle' e.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="link">{% if e.is_active %}Deactivate{% else %}Reactivate{% endif %}</button>
+                  </form>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}

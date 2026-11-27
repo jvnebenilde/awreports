@@ -1,2 +1,10 @@
-# Ignore .env file
+# Secrets
 .env
+
+# Local database / environment / IDE
+db.sqlite3
+.venv/
+.idea/
+__pycache__/
+*.pyc
+.DS_Store

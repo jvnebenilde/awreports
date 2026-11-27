@@ -6,7 +6,7 @@ from django.views.generic import CreateView, ListView, UpdateView
 from audit.models import AuditEvent
 from audit.services import changes_from_form, record
 from .forms import EmployeeCreateForm, EmployeeUpdateForm
-from .mixins import ManagerRequiredMixin
+from .mixins import ManagerRequiredMixin, ManagerOrSupervisorRequiredMixin
 from .models import Role, User
 
 A = AuditEvent.Action
@@ -19,9 +19,14 @@ class TeamScopedMixin(ManagerRequiredMixin):
             role=Role.EMPLOYEE, department=self.request.user.department
         )
 
-class TeamListView(TeamScopedMixin, ListView):
+class TeamListView(ManagerOrSupervisorRequiredMixin, ListView):
     template_name = "accounts/team_list.html"
     context_object_name = "employees"
+
+    def get_queryset(self):
+        return User.objects.filter(
+            role=Role.EMPLOYEE, department=self.request.user.department
+        )
 
 class TeamCreateView(ManagerRequiredMixin, CreateView):
     form_class = EmployeeCreateForm
@@ -31,7 +36,13 @@ class TeamCreateView(ManagerRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.role = Role.EMPLOYEE
         form.instance.department = self.request.user.department
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        record(self.request.user, A.USER_CREATED,
+               department=self.object.department, target=self.object,
+               detail={"via": "team", "role": self.object.role,
+                       "department": self.object.department},
+               request=self.request)
+        return response
 
 class TeamUpdateView(TeamScopedMixin, UpdateView):
     form_class = EmployeeUpdateForm
@@ -52,4 +63,8 @@ class TeamToggleActiveView(TeamScopedMixin, View):
         employee = get_object_or_404(self.get_queryset(), pk=pk)  # 404 outside their team
         employee.is_active = not employee.is_active
         employee.save(update_fields=["is_active"])
+        record(request.user,
+               A.USER_REACTIVATED if employee.is_active else A.USER_DEACTIVATED,
+               department=employee.department, target=employee,
+               detail={"via": "team"}, request=request)
         return redirect("accounts:team_list")

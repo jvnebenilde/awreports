@@ -13,3 +13,9 @@ class ManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
         u = self.request.user
         return u.is_active and u.role == Role.MANAGER
+
+class ManagerOrSupervisorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Read-only team access: managers and supervisors of the same department."""
+    def test_func(self):
+        u = self.request.user
+        return u.is_active and u.role in (Role.MANAGER, Role.SUPERVISOR)

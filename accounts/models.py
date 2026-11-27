@@ -11,6 +11,7 @@ class Department(models.TextChoices):
 class Role(models.TextChoices):
     ADMIN = "admin", "Administrator"
     MANAGER = "manager", "Manager"
+    SUPERVISOR = "supervisor", "Supervisor"
     EMPLOYEE = "employee", "Employee"
 
 class User(AbstractUser):
@@ -25,3 +26,4 @@ class User(AbstractUser):
             self.is_staff = self.is_superuser = True
             self.department = ""        # admins aren't tied to one department
         super().save(*args, **kwargs)
+

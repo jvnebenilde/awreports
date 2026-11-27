@@ -1,5 +1,4 @@
 import json
-import weasyprint
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -23,6 +22,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 class ReportView(ModuleAccessMixin, TemplateView):
     template_name = "reports/report.html"
     service_module = None
+
+    def get(self, request, *args, **kwargs):
+        record(request.user, AuditEvent.Action.REPORT_VIEWED,
+               department=self.module,
+               detail={"report": self.module}, request=request)
+        return super().get(request, *args, **kwargs)
 
     def get_year_range(self, years):
         min_y, max_y = min(years), max(years)
@@ -141,6 +146,7 @@ class ExportPdfView(ModuleAccessMixin, View):
             request=request,
         )
 
+        import weasyprint
         pdf_bytes = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri("/")).write_pdf()
 
         filename = f"{module}_report_{start_year}_{end_year}.pdf"

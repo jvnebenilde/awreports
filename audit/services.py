@@ -25,3 +25,16 @@ def record(actor, action, *, department="", target=None, detail=None, request=No
         detail=detail or {},
         ip_address=request.META.get("REMOTE_ADDR") if request else None,
     )
+
+def record_anonymous(action, *, username="", detail=None, request=None):
+    """For events where nobody is logged in (failed login)."""
+    return AuditEvent.objects.create(
+        action=action,
+        department="",
+        actor=None,
+        actor_username=username or "(unknown)",
+        actor_role="",
+        actor_department="",
+        detail=detail or {},
+        ip_address=request.META.get("REMOTE_ADDR") if request else None,
+    )
